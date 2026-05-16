@@ -1,14 +1,18 @@
 /* ══════════════════════════════════════════
    Skillak Service Worker v15
    ══════════════════════════════════════════ */
-const CACHE = 'skillak-v18';
+const CACHE = 'skillak-v28';
 const ASSETS = [
-  './', './index.html', './style.css', './style_patch.css',
-  './script.js', './patch4.js', './patch_final.js', './patch_v9.js',
-  './patch_fix_refund.js',
-  './style_brand.css',
-  './skillak.png', './icon-192.png', './icon-512.png',
-  './manifest.webmanifest'
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './sw.js',
+  './icon-192.png',
+  './icon-512.png',
+  './skillak.png',
+  './assets/styles/main.css',
+  './assets/scripts/main.js',
+  './assets/scripts/meet-session.js'
 ];
 
 self.addEventListener('install', event => {

@@ -45,6 +45,45 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900&family=Cairo:wght@400;600;700;900&display=swap"
     rel="stylesheet" />
+  <!-- ═══ SKILLAK GLOBAL PATCH — يُصلح showT قبل أي كود آخر ═══ -->
+  <script>
+    (function patchShowT() {
+      function _safeToast(msg, type) {
+        var t = document.getElementById('toast');
+        if (t) {
+          t.textContent = msg;
+          t.className = 'toast ' + (type === 'suc' ? 'suc' : type === 'err' ? 'err' : type === 'inf' ? 'inf' : '') + ' show';
+          clearTimeout(window._toastTmr);
+          window._toastTmr = setTimeout(function() { if (t) t.classList.remove('show'); }, 3500);
+          return;
+        }
+        // Fallback floating toast when #toast element is not in DOM
+        try {
+          var fb = document.createElement('div');
+          fb.textContent = msg;
+          fb.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);' +
+            'background:' + (type==='err'?'#dc2626':type==='suc'?'#059669':'#0d6e75') + ';' +
+            'color:#fff;padding:11px 24px;border-radius:14px;font-size:.9rem;z-index:99999;' +
+            'box-shadow:0 4px 24px rgba(0,0,0,.3);font-family:Cairo,sans-serif;' +
+            'max-width:90vw;text-align:center;pointer-events:none;';
+          document.body.appendChild(fb);
+          setTimeout(function() { if (fb.isConnected) fb.remove(); }, 3500);
+        } catch(e) { console.log('[Skillak Toast]', msg); }
+      }
+
+      // Override window.showT immediately and keep overriding after each script loads
+      window.showT = _safeToast;
+
+      // Re-apply after DOM and after each deferred script might reset it
+      document.addEventListener('DOMContentLoaded', function() {
+        var _orig = window.showT;
+        window.showT = function(msg, type) {
+          try { _safeToast(msg, type); } catch(e) { console.log('[Toast]', msg); }
+        };
+      });
+    })();
+  </script>
+  <!-- ═══ END SKILLAK GLOBAL PATCH ═══ -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -53,10 +92,80 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="style_patch.css">
-  <!-- ═══ Skillak Brand Theme — أزرق + برتقالي ═══ -->
-  <link rel="stylesheet" href="style_brand.css">
+  <link rel="stylesheet" href="assets/styles/main.css">
+    <!-- ═══ Skillak Brand Theme — أزرق + برتقالي ═══ -->
+  
+
+
+  <style id="skillak-ann-timer-css">
+    /* ── Announcements bar ── */
+    #sklAnnBar { direction:rtl; }
+
+    .skl-ann-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 16px 6px; gap:8px;
+    }
+    .skl-ann-title-wrap { display:flex; align-items:center; gap:8px; }
+    .skl-ann-icon { font-size:1.2rem; }
+    .skl-ann-title { font-weight:800; font-size:1rem; }
+    .skl-ann-sub   { font-size:.78rem; opacity:.6; }
+    .skl-ann-badge { background:#ef4444; color:#fff; font-size:.72rem; font-weight:700; padding:2px 9px; border-radius:100px; }
+
+    .skl-ann-track {
+      display:flex; gap:12px; overflow-x:auto; padding:6px 14px 14px;
+      scroll-snap-type:x mandatory; scrollbar-width:none;
+    }
+    .skl-ann-track::-webkit-scrollbar { display:none; }
+
+    .skl-ann-card {
+      flex:0 0 clamp(200px,55vw,260px); scroll-snap-align:start;
+      border-radius:14px; overflow:hidden; background:#111827;
+      box-shadow:0 2px 12px rgba(0,0,0,.25);
+      transition:transform .18s,box-shadow .18s; cursor:pointer;
+      border:1px solid rgba(255,255,255,.07);
+    }
+    .skl-ann-card:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,.35); }
+
+    .skl-ann-media {
+      width:100%; aspect-ratio:16/9; background:linear-gradient(135deg,#0d6e75,#1e3a5f);
+      overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center;
+    }
+    .skl-ann-media.is-fallback::after { content:'📢'; font-size:2.2rem; opacity:.6; }
+    .skl-ann-media-img { width:100%; height:100%; object-fit:cover; display:block; }
+
+    .skl-ann-overlay {
+      padding:10px 12px 12px; background:#111827; color:#fff;
+    }
+    .skl-ann-topline   { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:6px; }
+    .skl-ann-chip      { background:rgba(255,255,255,.12); color:rgba(255,255,255,.9); font-size:.7rem; padding:2px 8px; border-radius:100px; }
+    .skl-ann-date      { font-size:.7rem; color:rgba(255,255,255,.4); }
+    .skl-ann-card-title { font-size:.88rem; font-weight:700; line-height:1.4; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .skl-ann-card-text  { font-size:.75rem; color:rgba(255,255,255,.6); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .skl-ann-link { display:inline-block; margin-top:6px; font-size:.75rem; color:#5eead4; text-decoration:none; }
+
+    /* ── Floating session timer ── */
+    #skillakFloatTimer {
+      position:fixed; bottom:clamp(14px,3vw,24px); right:clamp(12px,3vw,20px);
+      z-index:8888; display:none;
+      background:rgba(10,22,40,.92); color:#fff;
+      border:1px solid rgba(94,234,212,.3); border-radius:16px;
+      padding:10px 16px; font-family:'Cairo',sans-serif;
+      box-shadow:0 4px 24px rgba(0,0,0,.45);
+      backdrop-filter:blur(12px); direction:rtl;
+      min-width:170px; cursor:default;
+      animation:ftSlideIn .3s ease;
+    }
+    @keyframes ftSlideIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+    #skillakFloatTimer .ft-label { font-size:.7rem; opacity:.55; margin-bottom:2px; }
+    #skillakFloatTimer .ft-time  {
+      font-size:1.45rem; font-weight:900; letter-spacing:.04em;
+      font-variant-numeric:tabular-nums; color:#5eead4;
+      font-family:'Fraunces',serif;
+    }
+    #skillakFloatTimer .ft-sub   { font-size:.7rem; opacity:.45; margin-top:1px; }
+    #skillakFloatTimer .ft-dot   { display:inline-block; width:7px; height:7px; border-radius:50%; background:#22c55e; margin-left:5px; animation:ftPulse 1.6s ease-in-out infinite; }
+    @keyframes ftPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.75)} }
+  </style>
 </head>
 
 <body>
@@ -81,8 +190,6 @@
     <div class="skl-splash-dots"><span></span><span></span><span></span></div>
   </div>
 
-
-
   <!-- NAVBAR -->
   <nav class="navbar" id="mainNav">
     <div class="logo" onclick="go('home');closeMobMenu()"
@@ -92,7 +199,7 @@
       <div class="logo">Skill<span>ak</span></div>
     </div>
     <div class="nl">
-      <span class="nli" onclick="go('explore')">🔍 استكشف</span>
+      <span class="nli" id="nlExplore" onclick="go('explore')" style="display:none">🔍 استكشف</span>
       <span class="nli" id="nlD" onclick="go('dashboard')" style="display:none">📊 لوحتي</span>
       <span class="nli" id="nlC" onclick="go('chat')" style="display:none">
         💬 الرسائل <span id="msgBadge" class="hidden"
@@ -120,7 +227,7 @@
   <div class="mob-menu" id="mobMenu">
     <div class="mob-menu-links">
       <div class="mob-nli" onclick="go('home');closeMobMenu()"><span class="nli-ic">🏠</span>الرئيسية</div>
-      <div class="mob-nli" onclick="go('explore');closeMobMenu()"><span class="nli-ic">🔍</span>استكشاف المعلمين</div>
+      <div class="mob-nli" id="mobExplore" onclick="go('explore');closeMobMenu()" style="display:none"><span class="nli-ic">🔍</span>استكشاف المعلمين</div>
       <div class="mob-nli" id="mobD" onclick="go('dashboard');closeMobMenu()" style="display:none"><span
           class="nli-ic">📊</span>لوحة التحكم</div>
       <div class="mob-nli" id="mobC" onclick="go('chat');closeMobMenu()" style="display:none"><span
@@ -149,7 +256,7 @@
       <div class="bn-item active" id="bnHome" onclick="go('home');setBnActive('bnHome')">
         <span class="bn-ic">🏠</span><span class="bn-lbl">الرئيسية</span>
       </div>
-      <div class="bn-item" id="bnExplore" onclick="go('explore');setBnActive('bnExplore')">
+      <div class="bn-item" id="bnExplore" onclick="go('explore');setBnActive('bnExplore')" style="display:none">
         <span class="bn-ic">🔍</span><span class="bn-lbl">استكشاف</span>
       </div>
       <div class="bn-item" id="bnChat" onclick="bnChatClick()">
@@ -171,7 +278,7 @@
     <section class="hero">
       <div class="hg">
         <div>
-          <div class="htag">✦ <span id="hTagCnt">1,200+</span> معلم متخصص نشط</div>
+          <div class="htag">✦ <span id="hTagCnt">—</span> معلم متخصص نشط</div>
           <h1 class="htitle">تعلّم أي مهارة<br />من شخص <em>حقيقي</em><br />في وقتك أنت</h1>
           <p class="hsub">Skillak يربطك بمدرّسين متخصصين عبر جلسات فيديو مباشرة. احجز بالساعة، تواصل بالشات، وادفع
             آمناً.</p>
@@ -199,39 +306,7 @@
           </div>
         </div>
         <div class="hfcwrap">
-          <div class="fwrap" id="heroFloatCards">
-            <!-- filled dynamically by renderHeroCards() -->
-            <div class="fc">
-              <div class="fcav" style="background:#fde68a;color:#78350f">س</div>
-              <div>
-                <div class="fcname">سارة محمد</div>
-                <div class="fcsub">Python & ML · $25/ساعة</div>
-                <div class="lb">
-                  <div class="ld"></div>متصلة الآن
-                </div>
-              </div>
-            </div>
-            <div class="fc">
-              <div class="fcav" style="background:#5eead4;color:#065f46">خ</div>
-              <div>
-                <div class="fcname">خالد العمري</div>
-                <div class="fcsub">Figma & UI/UX · $40/ساعة</div>
-                <div class="lb">
-                  <div class="ld"></div>متصل الآن
-                </div>
-              </div>
-            </div>
-            <div class="fc">
-              <div class="fcav" style="background:#c4b5fd;color:#4c1d95">ن</div>
-              <div>
-                <div class="fcname">نور الزهراء</div>
-                <div class="fcsub">Excel & Power BI · $30/ساعة</div>
-                <div class="lb">
-                  <div class="ld"></div>متصلة الآن
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="fwrap" id="heroFloatCards" style="display:none"></div>
         </div>
       </div>
     </section>
@@ -276,7 +351,7 @@
       </div>
     </section>
 
-    <section>
+    <div id="featSection" style="display:none"><section>
       <div class="sh split">
         <div><span class="sl">المعلمون</span>
           <h2 class="st">أعلى <span>المعلمين</span> تقييماً</h2>
@@ -287,7 +362,7 @@
           <div class="spin spin-sm" style="margin:0 auto 12px"></div>جاري التحميل...
         </div>
       </div>
-    </section>
+    </section></div>
 
     <section class="how">
       <div class="sh center"><span class="sl" style="color:var(--amber)">كيف تعمل المنصة</span>
@@ -315,8 +390,8 @@
         <div class="step">
           <div class="stepn">04</div>
           <div class="stepic">🎥</div>
-          <div class="steptitle">جلسة فيديو مباشرة</div>
-          <div class="stepdesc">فيديو مع كاميرا، ميكروفون، وشاركة شاشة — داخل المنصة تماماً.</div>
+          <div class="steptitle">جلسة Google Meet مباشرة</div>
+          <div class="stepdesc">رابط Google Meet خاص لكل حجز — افتح الجلسة بنقرة واحدة وابدأ الدرس مباشرة.</div>
         </div>
         <div class="step">
           <div class="stepn">05</div>
@@ -566,9 +641,13 @@
         </div>
         <div class="sbnav" id="sbNav"></div>
       </div>
-      <div class="dashcon" id="dashCon">
-        <div style="text-align:center;padding:80px">
-          <div class="spin" style="margin:0 auto"></div>
+      <div class="dashmain">
+        <!-- الإعلانات داخل العمود الرئيسي بجانب الشريط الجانبي -->
+        <div id="sklAnnBar" style="display:none"></div>
+        <div class="dashcon" id="dashCon">
+          <div style="text-align:center;padding:80px">
+            <div class="spin" style="margin:0 auto"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -601,7 +680,7 @@
             <div class="cwhstatus" id="chatHdrStatus"></div>
           </div>
           <div class="cwhact">
-            <button class="cwhbtn" id="chatCallBtn" onclick="startVideoFromChat()" title="جلسة فيديو"
+            <button class="cwhbtn" id="chatCallBtn" onclick="startVideoFromChat()" title="بدء جلسة Google Meet"
               style="display:none">📹</button>
           </div>
         </div>
@@ -627,16 +706,26 @@
       <div class="sesinfo">
         <div class="seslogo">Skill<span>ak</span></div>
         <div style="width:1px;height:16px;background:rgba(255,255,255,.12)"></div>
+        <!-- Google Meet badge -->
+        <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:100px;padding:3px 10px 3px 7px;font-size:.78rem;font-weight:700">
+          <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+            <rect width="48" height="48" rx="8" fill="white" fill-opacity="0.15"/>
+            <path d="M29 24c0 2.76-2.24 5-5 5s-5-2.24-5-5 2.24-5 5-5 5 2.24 5 5z" fill="#00BCD4"/>
+            <path d="M34 17l-5 4v6l5 4V17z" fill="#00BCD4"/>
+          </svg>
+          Google Meet
+        </div>
         <div class="sestitle" id="sesTitle">جلسة تعليمية</div>
         <div style="display:flex;align-items:center;gap:5px">
-          <div class="sesdot" id="sesDot" style="background:var(--amber)"></div><span class="sesstatus" id="sesTxt">جاري
-            الاتصال...</span>
+          <div class="sesdot" id="sesDot" style="background:var(--amber)"></div>
+          <span class="sesstatus" id="sesTxt">جارٍ تجهيز الجلسة...</span>
         </div>
       </div>
-      <div class="sestimer" id="sesTimer">00:00:00</div>
+      <div class="sestimer" id="sesTimer" style="display:none">00:00:00</div>
       <div id="sesCountdown" class="ses-countdown" style="display:none"></div>
     </div>
     <div class="sesmain">
+      <!-- Session Chat Panel -->
       <div class="seschat hidden" id="sesChatPnl">
         <div class="seschathdr">💬 دردشة الجلسة<button
             style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:.96rem"
@@ -646,42 +735,54 @@
             onkeydown="if(event.key==='Enter')sendSesMsg()" /><button class="btn btn-p btn-sm"
             onclick="sendSesMsg()">إرسال</button></div>
       </div>
-      <div id="remWrap">
-        <video id="remVid" autoplay playsinline></video>
+
+      <!-- Google Meet main panel — meet-session.js fills #waitOv with the Meet UI -->
+      <div id="remWrap" style="position:relative;flex:1;background:#0d1117;display:flex;align-items:center;justify-content:center;overflow:hidden">
+        <!-- Hidden legacy video elements — kept for compatibility, not displayed -->
+        <video id="remVid" autoplay playsinline style="display:none"></video>
+
+        <!-- Meet panel: filled dynamically by meet-session.js -->
         <div class="waitov" id="waitOv"
-          style="position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow-y:auto">
-          <div style="font-size:3.6rem">📹</div>
-          <h3>في انتظار الطرف الآخر...</h3>
-          <p>سيبدأ الاتصال تلقائياً عند انضمامه</p>
-          <div class="spin" style="margin-top:7px"></div>
+          style="position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow-y:auto;background:linear-gradient(135deg,rgba(13,110,117,.95),rgba(20,184,166,.88))">
+          <!-- Default loading state before meet-session.js takes over -->
+          <div style="text-align:center;color:#fff;padding:24px">
+            <div style="font-size:3rem;margin-bottom:10px">📹</div>
+            <div style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:900;margin-bottom:8px">Google Meet</div>
+            <p style="opacity:.85;font-size:.9rem;margin-bottom:14px">جاري تجهيز رابط الجلسة...</p>
+            <div class="spin"></div>
+          </div>
         </div>
       </div>
-      <div id="locWrap">
+
+      <!-- Local video wrapper — hidden for Google Meet, kept for JS compatibility -->
+      <div id="locWrap" style="display:none">
         <video id="locVid" autoplay playsinline muted></video>
-        <div id="camOffOv"
-          style="position:absolute;inset:0;background:#1a1a2e;display:none;align-items:center;justify-content:center;flex-direction:column;gap:5px;color:rgba(255,255,255,.4)">
-          <span style="font-size:1.6rem">📷</span><span style="font-size:.68rem">مغلقة</span>
-        </div>
+        <div id="camOffOv" style="display:none"></div>
       </div>
     </div>
+
+    <!-- Controls bar — WebRTC buttons hidden; only chat, exit, end shown -->
     <div class="sesctrls">
-      <div class="cwrap"><button class="cbtn on" id="micBtn" onclick="togMic()">🎤</button>
+      <!-- WebRTC-only buttons: hidden but kept in DOM for JS compatibility -->
+      <div class="cwrap" style="display:none"><button class="cbtn on" id="micBtn" onclick="togMic()">🎤</button>
         <div class="clbl">ميكروفون</div>
       </div>
-      <div class="cwrap"><button class="cbtn on" id="camBtn" onclick="togCam()">📷</button>
+      <div class="cwrap" style="display:none"><button class="cbtn on" id="camBtn" onclick="togCam()">📷</button>
         <div class="clbl">كاميرا</div>
       </div>
-      <div class="cwrap"><button class="cbtn on" id="scrBtn" onclick="togScr()">🖥️</button>
+      <div class="cwrap" style="display:none"><button class="cbtn on" id="scrBtn" onclick="togScr()">🖥️</button>
         <div class="clbl">شاشة</div>
       </div>
+      <div class="cwrap" style="display:none"><button class="cbtn on" id="flipBtn" onclick="switchCameraFacing()">🔄</button>
+        <div class="clbl">تبديل</div>
+      </div>
+
+      <!-- Active controls for Meet -->
       <div class="cwrap"><button class="cbtn chattog" id="chatTogBtn" onclick="toggleSesChat()">💬</button>
         <div class="clbl">دردشة</div>
       </div>
-      <div class="cwrap"><button class="cbtn on" id="flipBtn" onclick="switchCameraFacing()">🔄</button>
-        <div class="clbl">تبديل</div>
-      </div>
-      <div class="cwrap" id="studentExitWrap" style="display:none"><button class="cbtn on" id="studentExitBtn"
-          onclick="window.studentExitSession()"
+      <div class="cwrap" id="studentExitWrap" style="display:none">
+        <button class="cbtn on" id="studentExitBtn" onclick="window.studentExitSession()"
           style="background:rgba(245,158,11,.22);box-shadow:0 2px 8px rgba(0,0,0,.2)">🚪</button>
         <div class="clbl">خروج</div>
       </div>
@@ -1178,6 +1279,7 @@
         <button class="btn btn-gh btn-sm adminTab" onclick="adTab('reviews',this)">⭐ التقييمات</button>
         <button class="btn btn-gh btn-sm adminTab" onclick="adTab('commission',this)">🧾 العمولة</button>
         <button class="btn btn-gh btn-sm adminTab" onclick="adTab('reports',this)">📄 التقارير</button>
+        <button class="btn btn-gh btn-sm adminTab" onclick="adTab('announcements',this)">📢 الإعلانات</button>
       </div>
       <div id="adCon"></div>
     </div>
@@ -1368,7 +1470,7 @@
         <div class="cl"><span>👤 المعلم</span><strong id="bkTch">—</strong></div>
         <div class="cl"><span>📅 التاريخ</span><strong id="bkDt">—</strong></div>
         <div class="cl"><span>⏰ الوقت</span><strong id="bkTm">—</strong></div>
-        <div class="cl"><span>🎥 نوع الجلسة</span><strong>فيديو مباشر داخل المنصة</strong></div>
+        <div class="cl"><span>🎥 نوع الجلسة</span><strong>جلسة Google Meet — رابط خاص لكل حجز</strong></div>
         <div style="margin:13px 0">
           <div class="pline"><span>💵 سعر الجلسة</span><span id="bkPrc"
               style="font-weight:700;color:var(--teal)">—</span></div>
@@ -1504,7 +1606,6 @@
    APPLICATION JAVASCRIPT
 ════════════════════════════════════════ -->
 
-
   <!-- ══ PAYMOB CONFIG MODAL ══ -->
   <div id="paymobCfgMod" class="mov hidden" onclick="closeBg(event,'paymobCfgMod')">
     <div class="modal" style="max-width:480px">
@@ -1546,38 +1647,74 @@
       </div>
     </div>
   </div>
-  <script src="script.js" defer></script>
-  <script src="patch.js" defer></script>
-  <script src="patch2.js" defer></script>
-  <script src="patch3.js" defer></script>
-
-  <script src="patch4.js" defer></script>
-  <script src="patch_final.js" defer></script>
-  <script src="patch_v9.js" defer></script>
-  <script src="patch_fix_refund.js" defer></script>
+  <script src="assets/scripts/main.js" defer></script>
+  <script src="assets/scripts/meet-session.js" defer></script>
   <script>
-    /* ══ PWA — Service Worker Registration ══ */
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js', { scope: './' })
-          .then(reg => {
-            console.log('[SW] Registered:', reg.scope);
-            /* تحديث تلقائي للـ SW */
-            reg.addEventListener('updatefound', () => {
-              const newWorker = reg.installing;
-              if (!newWorker) return;
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  /* إشعار بوجود تحديث */
-                  console.log('[SW] Update available');
-                }
-              });
-            });
-          })
-          .catch(err => console.warn('[SW] Registration failed:', err));
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
       });
     }
   </script>
+
+  <!-- ═══ Story / Announcement Viewer ═══ -->
+  <div id="sklStoryViewer" style="display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,.88);backdrop-filter:blur(6px);
+    align-items:center;justify-content:center;direction:rtl">
+
+    <!-- Close -->
+    <button onclick="window.sklCloseStory()" aria-label="إغلاق"
+      style="position:absolute;top:16px;left:16px;background:rgba(255,255,255,.15);
+      border:none;color:#fff;width:38px;height:38px;border-radius:50%;
+      font-size:1.1rem;cursor:pointer;z-index:10">✕</button>
+
+    <!-- Progress bar -->
+    <div id="sklStoryProg"
+      style="position:absolute;top:0;left:0;right:0;height:3px;display:flex;gap:3px;padding:0 12px;box-sizing:border-box;z-index:10"></div>
+
+    <!-- Nav: previous -->
+    <button onclick="window.sklStoryNav(-1)" aria-label="السابق"
+      style="position:absolute;right:8px;top:50%;transform:translateY(-50%);
+      background:rgba(255,255,255,.12);border:none;color:#fff;width:40px;height:40px;
+      border-radius:50%;font-size:1.2rem;cursor:pointer;z-index:10">›</button>
+
+    <!-- Nav: next -->
+    <button onclick="window.sklStoryNav(1)" aria-label="التالي"
+      style="position:absolute;left:8px;top:50%;transform:translateY(-50%);
+      background:rgba(255,255,255,.12);border:none;color:#fff;width:40px;height:40px;
+      border-radius:50%;font-size:1.2rem;cursor:pointer;z-index:10">‹</button>
+
+    <!-- Content -->
+    <div id="sklStoryContent"
+      style="width:min(420px,92vw);max-height:88vh;overflow-y:auto;border-radius:18px;overflow:hidden"></div>
+  </div>
+
+  <style>
+    .skl-story-shell { display:flex; flex-direction:column; background:#111; color:#fff; border-radius:18px; overflow:hidden; }
+    .skl-story-media { width:100%; aspect-ratio:16/9; background:#1a1a2e; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .skl-story-media.is-fallback { background:linear-gradient(135deg,#0d6e75,#1e40af); }
+    .skl-story-media.is-fallback::after { content:'📢'; font-size:3rem; }
+    .skl-story-img { width:100%; height:100%; object-fit:cover; }
+    .skl-story-body { padding:18px 16px 20px; }
+    .skl-story-meta { display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
+    .skl-story-chip { background:rgba(255,255,255,.15); color:#fff; font-size:.75rem; padding:3px 10px; border-radius:100px; }
+    .skl-story-date { font-size:.75rem; color:rgba(255,255,255,.5); }
+    .skl-story-title { font-size:1.15rem; font-weight:700; margin:0 0 8px; line-height:1.4; }
+    .skl-story-text { font-size:.88rem; line-height:1.7; color:rgba(255,255,255,.8); margin-bottom:14px; white-space:pre-wrap; }
+    .skl-story-link { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,.12); color:#fff; padding:9px 18px; border-radius:10px; font-size:.88rem; text-decoration:none; font-weight:600; }
+    .skl-story-link:hover { background:rgba(255,255,255,.22); }
+    .skl-story-seg { flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.25); transition:background .2s; }
+    .skl-story-seg.is-done { background:rgba(255,255,255,.8); }
+    .skl-story-seg.is-active { background:#fff; }
+  </style>
+  <!-- ═══ End Story Viewer ═══ -->
+
+  <!-- ═══ Floating Session Timer ═══ -->
+  <div id="skillakFloatTimer">
+    <div class="ft-label"><span class="ft-dot"></span> جلسة جارية</div>
+    <div class="ft-time" id="skillakFloatTime">00:00:00</div>
+    <div class="ft-sub" id="skillakFloatSub">الوقت المتبقي</div>
+  </div>
 </body>
 
 </html>
